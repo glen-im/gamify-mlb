@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Video + Popup Demo</title>
+  <!-- You can add your own fonts or styles here -->
+  <style>
+    /* --- Some Sparkly Styling --- */
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #fafbfd;
+    }
+
+    .video-container {
+      position: relative;
+      margin-top: 20px;
+    }
+
+    video {
+      width: 600px;
+      border: 3px solid #eee;
+      border-radius: 8px;
+    }
+
+    /* Popup container placed on the right side of the video */
+    .popup-container {
+      position: absolute;
+      top: 10px;
+      left: 620px; /* a bit to the right of the video */
+      width: 250px;
+      padding: 20px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      background-color: #fff;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      display: none; /* hidden by default */
+    }
+
+    .popup-container h3 {
+      margin-top: 0;
+    }
+
+    .popup-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button {
+      cursor: pointer;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      background-color: #7e57c2;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background-color: #5e35b1;
+    }
+
+    .responses {
+      margin-top: 30px;
+      width: 600px;
+      text-align: center;
+    }
+
+    .responses p {
+      background-color: #d1c4e9;
+      padding: 10px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Gamify Live MLB</h1>
+
+  <div class="video-container">
+    <!-- 1) Video Element -->
+    <video id="myVideo" controls>
+      <!-- Replace this with your actual video source -->
+      <source src="https://sporty-clips.mlb.com/MTYyVlZfV0ZRVkV3dEdEUT09X0F3ZFJCVlpTWDFBQUFWY0tYd0FBVkFJRUFGZ0FCVlFBQUFCVEJ3b0RBZ0JSVVF0Uw==.mp4" type="video/mp4" />
+      Your browser does not support HTML5 video.
+    </video>
+
+    <!-- 2) Popup Container -->
+    <div class="popup-container" id="popupContainer">
+      <h3 id="popupMessage">Your message goes here!</h3>
+      <div class="popup-buttons">
+        <button onclick="handleResponse('Yes!')">Yes!</button>
+        <button onclick="handleResponse('No.')">No</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3) Responses Display -->
+  <div class="responses" id="responses"></div>
+
+  <!-- JavaScript right before closing body tag -->
+  <script>
+    // Grab references to elements
+    const video = document.getElementById('myVideo');
+    const popupContainer = document.getElementById('popupContainer');
+    const popupMessage = document.getElementById('popupMessage');
+    const responsesDiv = document.getElementById('responses');
+
+    // A little array of "events" that say when to show a popup and what the message should be
+    // Here, we’ll show a popup at 5 seconds and 10 seconds for demonstration.
+    const popupEvents = [
+      { time: 1,  message: "Will Freeman swing this one?" }
+    ];
+
+    // Keep track of which events we've already shown so we don't show them multiple times
+    let shownEvents = [];
+
+    // Listen for time updates on the video
+    video.addEventListener('timeupdate', () => {
+      const currentTime = Math.floor(video.currentTime);
+
+      // Check if we have an event to show at the current time
+      popupEvents.forEach((event) => {
+        if (currentTime === event.time && !shownEvents.includes(event.time)) {
+          // Show the popup
+          popupMessage.innerText = event.message;
+          popupContainer.style.display = 'block';
+
+          // Remember we've shown this
+          shownEvents.push(event.time);
+        }
+      });
+    });
+
+    // Handle user response
+    function handleResponse(selectedOption) {
+      // Hide the popup
+      popupContainer.style.display = 'none';
+
+      // Display chosen response in the responses area
+      const p = document.createElement('p');
+      p.textContent = `You chose: ${selectedOption}`;
+      responsesDiv.appendChild(p);
+    }
+  </script>
+</body>
+</html>
