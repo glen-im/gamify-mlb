@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>MLB Home Runs</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #fafbfd;
+    }
+
+    .video-container {
+      max-width: 800px;
+      width: 100%;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      overflow: hidden;
+      position: relative;
+    }
+
+    video {
+      width: 100%;
+      display: block;
+    }
+
+    .metadata {
+      padding: 20px;
+    }
+
+    .title {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-item {
+      font-size: 0.9em;
+    }
+
+    .stat-label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      background-color: #0066cc;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background-color: #0052a3;
+    }
+
+    .counter {
+      text-align: center;
+      margin-top: 10px;
+      color: #666;
+      font-size: 0.9em;
+    }
+
+    #loadingMessage {
+      font-size: 1.2em;
+      color: #666;
+      margin: 20px;
+    }
+
+    .popup-container {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 250px;
+      padding: 20px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      background-color: #fff;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      z-index: 1000;
+    }
+
+    .popup-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .responses {
+      margin-top: 10px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .responses p {
+      background-color: #f0f0f0;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>MLB Home Run Highlights</h1>
+
+  <div id="loadingMessage">Loading MLB highlights...</div>
+
+  <div class="video-container" id="videoContainer" style="display: none;">
+    <video id="videoPlayer" controls autoplay>
+      <source src="" type="video/mp4">
+      Your browser does not support HTML5 video.
+    </video>
+    
+    <!-- Popup Container -->
+    <div class="popup-container" id="popupContainer" style="display: none;">
+      <h3 id="popupMessage"></h3>
+      <div class="popup-buttons">
+        <button onclick="handleResponse('Yes!')">Yes!</button>
+        <button onclick="handleResponse('No.')">No</button>
+      </div>
+    </div>
+
+    <!-- Responses Display -->
+    <div class="responses" id="responses"></div>
+    
+    <div class="metadata">
+      <div class="title" id="videoTitle"></div>
+      
+      <div class="stats">
+        <div class="stat-item">
+          <div class="stat-label">Season</div>
+          <div id="season"></div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Exit Velocity</div>
+          <div id="exitVelocity"></div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Launch Angle</div>
+          <div id="launchAngle"></div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Distance</div>
+          <div id="distance"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button onclick="previousVideo()">Previous</button>
+        <button onclick="nextVideo()">Next</button>
+      </div>
+      
+      <div class="counter" id="counter"></div>
+    </div>
+  </div>
+
+  <script>
+    let videos = [];
+    let currentIndex = 0;
+
+    const videoPlayer = document.getElementById('videoPlayer');
+    const videoContainer = document.getElementById('videoContainer');
+    const loadingMessage = document.getElementById('loadingMessage');
+    const popupContainer = document.getElementById('popupContainer');
+    const popupMessage = document.getElementById('popupMessage');
+
+    // Fetch videos from API
+    async function fetchVideos() {
+      try {
+        const response = await fetch('http://localhost:5000/api/mlb-data');
+        if (!response.ok) throw new Error('Failed to fetch data');
+        videos = await response.json();
+        
+        // Show video container and hide loading message
+        videoContainer.style.display = 'block';
+        loadingMessage.style.display = 'none';
+        
+        // Load first video
+        loadCurrentVideo();
+      } catch (error) {
+        loadingMessage.textContent = 'Error loading videos: ' + error.message;
+        console.error('Error:', error);
+      }
+    }
+
+    function loadCurrentVideo() {
+      const video = videos[currentIndex];
+      
+      // Update video source
+      videoPlayer.src = video.video;
+      videoPlayer.load(); // Important to reload the video
+      
+      // Update metadata
+      document.getElementById('videoTitle').textContent = video.title;
+      document.getElementById('season').textContent = video.season;
+      document.getElementById('exitVelocity').textContent = video.ExitVelocity.toFixed(1) + ' mph';
+      document.getElementById('launchAngle').textContent = video.LaunchAngle.toFixed(1) + '°';
+      document.getElementById('distance').textContent = video.HitDistance.toFixed(1) + ' ft';
+      document.getElementById('counter').textContent = `Video ${currentIndex + 1} of ${videos.length}`;
+
+      // Clear previous responses
+      document.getElementById('responses').innerHTML = '';
+
+      // Extract player name from title (assumes format: "Player Name homers...")
+      const playerName = video.title.split(' homers')[0];
+      
+      // Show popup after a short delay
+      setTimeout(() => {
+        popupMessage.innerText = `Will ${playerName} hit this one?`;
+        popupContainer.style.display = 'block';
+      }, 500);
+    }
+
+    function handleResponse(selectedOption) {
+      // Hide the popup
+      popupContainer.style.display = 'none';
+
+      // Display chosen response
+      const p = document.createElement('p');
+      p.textContent = `You chose: ${selectedOption}`;
+      document.getElementById('responses').appendChild(p);
+    }
+
+    function nextVideo() {
+      currentIndex = (currentIndex + 1) % videos.length;
+      loadCurrentVideo();
+    }
+
+    function previousVideo() {
+      currentIndex = (currentIndex - 1 + videos.length) % videos.length;
+      loadCurrentVideo();
+    }
+
+    // Auto-advance to next video when current one ends
+    videoPlayer.addEventListener('ended', nextVideo);
+
+    // Initial load
+    fetchVideos();
+  </script>
+</body>
+</html>
